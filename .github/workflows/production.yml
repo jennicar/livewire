@@ -1,0 +1,129 @@
+name: Deploy to Production
+
+on:
+  repository_dispatch:
+    types: production-deployment
+
+env:
+  AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+  AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+  AWS_REGION: 'us-east-1'
+  PRIVATE_KEY: ${{ secrets.SSH_PRIV }}
+  SERVER_A_IP: ''
+  SERVER_B_IP: ''
+
+jobs:
+  deploy-production:
+    runs-on: ubuntu-20.04
+    steps:
+      - name: Git checkout Core
+        uses: actions/checkout@v2
+        with:
+          ref: ${{ github.event.client_payload.ref }}
+
+      - name: Get sha to be deployed
+        run: echo "SHA=$(git rev-parse HEAD)" >> $GITHUB_ENV
+
+      - name: Wait for build to finish
+        uses: fountainhead/action-wait-for-check@v1.0.0
+        id: wait-for-build
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          checkName: create-release-artifact
+          timeoutSeconds: 300
+          ref: ${{ env.SHA }}
+
+      - name: Handle failed build
+        if: steps.wait-for-build.outputs.conclusion != 'success'
+        run: exit 1
+
+      - name: Download artifact
+        run: aws s3 cp s3://btp-laravel-base-releases/${{ env.SHA }}.tar.gz ${{ env.SHA }}.tar.gz
+
+      - name: Extract artifact
+        run: mkdir release && tar -zxf ${{ env.SHA }}.tar.gz -C release
+
+      - name: Prep SSH Access
+        run: |
+          wget -O authorized_keys_temp https://btp-devops.s3.amazonaws.com/authorized_keys
+          cat release/provisioning/deployer.pub authorized_keys_temp > authorized_keys
+
+      - name: Update SSH Access
+        uses: appleboy/scp-action@master
+        env:
+          HOST: ${{ env.SERVER_A_IP }},${{ env.SERVER_B_IP }}
+          USERNAME: app-user
+          KEY: ${{ env.PRIVATE_KEY }}
+        with:
+          source: 'authorized_keys'
+          target: ~/.ssh
+
+      - name: Handle environment specific tasks
+        working-directory: release
+        run: |
+          mv .env.production .env
+          sudo sed -i -r "s/\{APP_VERSION\}/${{ github.event.client_payload.ref }}/" .env
+          sudo sed -i -r "s/\{AWS_ACCESS_KEY_ID\}/${{ env.AWS_ACCESS_KEY_ID }}/" .env
+          sudo sed -i -r "s/\{AWS_SECRET_ACCESS_KEY\}/${{ env.AWS_SECRET_ACCESS_KEY }}/" .env
+          sudo sed -i -r "s/\{DB_PASSWORD\}/${{ secrets.DB_PASSWORD }}/" .env
+          sudo sed -i -r "s/\{FROALA_KEY\}/${{ secrets.FROALA_KEY }}/" .env
+          sudo sed -i -r "s/\{SENDGRID_API_KEY\}/${{ secrets.SENDGRID_API_KEY }}/" .env
+          sudo sed -i -r "s/\{SHOPIFY_API_KEY\}/${{ secrets.SHOPIFY_API_KEY_PRODUCTION }}/" .env
+          sudo sed -i -r "s/\{SHOPIFY_PASSWORD\}/${{ secrets.SHOPIFY_PASSWORD_PRODUCTION }}/" .env
+          mv provisioning/robots/robots.production.txt public/robots.txt
+
+      - name: Copy release to servers using scp
+        uses: appleboy/scp-action@master
+        env:
+          HOST: ${{ env.SERVER_A_IP }},${{ env.SERVER_B_IP }}
+          USERNAME: app-user
+          KEY: ${{ env.PRIVATE_KEY }}
+        with:
+          source: 'release/*'
+          target: ~/releases/${{ env.SHA }}
+          strip_components: 1
+
+      - name: Run migrations on one server only
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ env.SERVER_A_IP }}
+          key: ${{ env.PRIVATE_KEY }}
+          username: app-user
+          script_stop: true
+          script: |
+            cd ~/releases/${{ env.SHA }}
+            php artisan migrate --force
+
+      - name: Flip to new release and migrate database on servers
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ env.SERVER_A_IP }},${{ env.SERVER_B_IP }}
+          key: ${{ env.PRIVATE_KEY }}
+          username: app-user
+          script_stop: true
+          script: |
+            sudo rm -rf /srv/www
+            sudo ln -s ~/releases/${{ env.SHA }} /srv/www
+            sudo rm -rf /srv/www/storage/app/.glide-cache
+            sudo ln -s /srv/storage/.glide-cache /srv/www/storage/app/.glide-cache
+            cd releases && ls -1t | tail -n +5 | xargs rm -rf
+            cd /srv/www
+            php artisan config:cache
+
+      - name: Copy .git over to root so Sentry error reporting functions properly
+        run: mv release/.git .git
+
+      - name: Notify slack if successfull
+        uses: fjogeleit/http-request-action@master
+        with:
+          method: POST
+          url: ${{ github.event.client_payload.slack_response_url }}
+          data: '{"replace_original": true, "text": "*Successfully* deployed `${{ github.event.client_payload.ref }}` (`${{ env.SHA }}`) to *production*"}'
+
+      - name: Notify slack if failure occurred
+        if: failure()
+        uses: fjogeleit/http-request-action@master
+        with:
+          method: POST
+          url: ${{ github.event.client_payload.slack_response_url }}
+          data: '{"replace_original": true, "text": "A *failure* has occurred while deploying `${{ github.event.client_payload.ref }}` (`${{ env.SHA }}`) to *production*"}'

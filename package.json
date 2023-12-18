@@ -1,0 +1,81 @@
+{
+  "name": "btp-laravel-base",
+  "version": "1.0.0",
+  "description": "Essential front-end dependencies for By the Pixel's base Laravel setup.",
+  "main": "index.js",
+  "engines": {
+    "node": ">=20.9.0"
+  },
+  "scripts": {
+    "dev": "npm run development",
+    "development": "mix",
+    "watch": "mix watch",
+    "watch-poll": "mix watch -- --watch-options-poll=1000",
+    "hot": "mix watch --hot",
+    "prod": "npm run production",
+    "production": "mix --production",
+    "critical-css": "rm -rf public/css-critical && npm run production -- -- --env --criticalcss=true",
+    "eslint": "./node_modules/.bin/eslint --format friendly resources/**/*.js",
+    "eslint-fix": "./node_modules/.bin/eslint --format friendly resources/**/*.js --fix",
+    "build-image-collection": "cd nova-components/ImageCollection && npm run dev",
+    "build-image-collection-prod": "cd nova-components/ImageCollection && npm run prod"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/bythepixel/btp-laravel-base.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/bythepixel/btp-laravel-base/issues"
+  },
+  "homepage": "https://github.com/bythepixel/btp-laravel-base#readme",
+  "devDependencies": {
+    "@babel/plugin-proposal-class-properties": "^7.12.1",
+    "@babel/plugin-proposal-export-default-from": "^7.12.1",
+    "@babel/plugin-proposal-optional-chaining": "^7.12.1",
+    "@babel/plugin-proposal-private-methods": "^7.12.1",
+    "autoprefixer": "^10.2.5",
+    "babel-eslint": "^10.1.0",
+    "clean-webpack-plugin": "^3.0.0",
+    "cross-env": "^7.0",
+    "eslint": "^7.13.0",
+    "eslint-config-airbnb-base": "^14.2.1",
+    "eslint-config-problems": "^5.0.0",
+    "eslint-formatter-friendly": "^7.0.0",
+    "eslint-import-resolver-webpack": "^0.13.0",
+    "eslint-loader": "^4.0.2",
+    "eslint-plugin-compat": "^3.9.0",
+    "eslint-plugin-import": "^2.22.1",
+    "eslint-plugin-vue": "^7.1.0",
+    "eslint-webpack-plugin": "^2.5.3",
+    "html-critical-webpack-plugin": "^2.1.0",
+    "laravel-mix": "^6.0.11",
+    "laravel-mix-eslint": "^0.2.0",
+    "laravel-mix-versionhash": "^2.0.0",
+    "mini-css-extract-plugin": "^1.3.3",
+    "postcss": "^8.2.4",
+    "postcss-safe-important": "^1.2.0",
+    "resolve-url-loader": "^3.1.2",
+    "sass": "^1.69.4",
+    "sass-loader": "^12.6.0",
+    "stylelint": "^13.8.0",
+    "stylelint-config-recommended": "^4.0.0",
+    "stylelint-config-standard": "^21.0.0",
+    "stylelint-selector-bem-pattern": "^2.1.0",
+    "stylelint-webpack-plugin": "^2.1.1",
+    "vue-template-compiler": "^2.6.12"
+  },
+  "dependencies": {
+    "@bythepixel/component-loader": "^0.5.6",
+    "@bythepixel/run-in-view": "^1.0.1",
+    "@mapbox/mapbox-sdk": "^0.12.1",
+    "@sentry/browser": "^5.27.6",
+    "@sentry/tracing": "^5.27.6",
+    "core-js": "^3.7.0",
+    "fg-loadcss": "^3.1.0",
+    "laravel-mix-criticalcss": "^1.0.2",
+    "micromodal": "^0.4.6",
+    "swiper": "^6.3.5"
+  }
+}

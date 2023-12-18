@@ -1,0 +1,45 @@
+<?php
+
+namespace {{ namespace }};
+
+use Illuminate\Http\Request;
+use Laravel\Nova\Fields\ID;
+use Laravel\Nova\Http\Requests\NovaRequest;
+
+class {{ class }} extends Resource
+{
+    public static $model = \{{ namespacedModel }}::class;
+
+    public static $title = 'id';
+
+    public static $search = [
+        'id',
+    ];
+
+    public function fields(NovaRequest $request)
+    {
+        return [
+            ID::make()->sortable(),
+        ];
+    }
+
+    public function cards(NovaRequest $request)
+    {
+        return [];
+    }
+
+    public function filters(NovaRequest $request)
+    {
+        return [];
+    }
+
+    public function lenses(NovaRequest $request)
+    {
+        return [];
+    }
+
+    public function actions(NovaRequest $request)
+    {
+        return [];
+    }
+}

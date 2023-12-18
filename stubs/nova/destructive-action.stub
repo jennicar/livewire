@@ -1,0 +1,21 @@
+<?php
+
+namespace {{ namespace }};
+
+use Illuminate\Support\Collection;
+use Laravel\Nova\Actions\DestructiveAction;
+use Laravel\Nova\Fields\ActionFields;
+use Laravel\Nova\Http\Requests\NovaRequest;
+
+class {{ class }} extends DestructiveAction
+{
+    public function handle(ActionFields $fields, Collection $models)
+    {
+        //
+    }
+
+    public function fields(NovaRequest $request)
+    {
+        return [];
+    }
+}

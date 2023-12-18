@@ -1,0 +1,32 @@
+# Directories
+node_modules
+/public/js
+/public/css
+/public/build
+/public/hot
+/public/storage
+/public/vendor
+/public/bythepixel
+/storage/*.key
+/vendor
+ubuntu-*
+public/mix.*
+
+# Dot Files
+.eslintcache
+.DS_Store
+.vagrant
+.idea
+.env
+.env.backup
+.phpunit.result.cache
+
+# Files
+Homestead.json
+Homestead.yaml
+npm-debug.log
+yarn-error.log
+auth.json
+public/hot-output.ini
+/public/mix-manifest.json
+/public/robots.txt
